@@ -389,7 +389,7 @@ class CourseBulkEmailAPIView(APIView):
         course_auth, _ = CourseAuthorization.objects.get_or_create(course_id=course_key, email_enabled=True)
         return ResponseSuccess({"enabled": course_auth.email_enabled})
 
-
+@view_auth_classes(is_authenticated=True)
 class RefreshToken(APIView):
     def post(self, request):
         username = request.data.get("username")
@@ -473,6 +473,7 @@ class DiscussionForum(APIView):
 
         return Response(results, content_type="application/json")
 
+@view_auth_classes(is_authenticated=True)
 class UsersProfileUpdateView(APIView):
     """
     Update all the details of the user's profile.
@@ -499,6 +500,11 @@ class UsersProfileUpdateView(APIView):
             user.profile.name = data.get("name", user.profile.name)
             user.save()
             user.profile.save()
+            return ResponseSuccess(
+                data={"message": f"Profile updated successfully for user '{username}'."},
+                content_type="application/json"
+            )
+            
        except User.DoesNotExist:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
