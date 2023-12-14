@@ -478,6 +478,12 @@ class UsersProfileUpdateView(APIView):
     """
     Update all the details of the user's profile.
     """
+    def get(self, request):
+        # tell the users what all parameters to be passed
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data={"message": "Username must be passed to update the profile."},
+        )
     def post(self, request):
        data = request.POST.copy()
        username = data.get("username")
