@@ -401,6 +401,16 @@ class RefreshToken(APIView):
             },
             content_type="application/json",
         )
+    def get(self, request):
+        username = request.data.get("username")
+        user = User.objects.get(username=username)
+        token = create_jwt_for_user(user)
+        return Response(
+            {
+                "token": str(token),
+            },
+            content_type="application/json",
+        )
 
 
 class APIInfoView(APIView):
@@ -485,13 +495,13 @@ class UsersProfileUpdateView(APIView):
             data={"message": "Username must be passed to update the profile."},
         )
     def post(self, request):
-       data = request.POST.copy()
+       data = request.data
        username = data.get("username")
 
        if not username:
            return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": "Username must be passed to update the profile."},
+                data={"message": "Username must be passed to update the profile in POST method."},
             )
        try:
             user = User.objects.get(username=username)
