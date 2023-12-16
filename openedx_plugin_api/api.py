@@ -495,12 +495,14 @@ class UsersProfileUpdateView(APIView):
             data={"message": f"Username must be passed to update the profile. {request.data}"},
         )
     def post(self, request):
+       print(json.dumps(request))
+       print(request)
        data = request.data
        username = data.get("username")
        if not username:
            return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": f"Username must be passed to update the profile in POST method. This is the data: {data}"},
+                data={"message": f"Username must be passed to update the profile in POST method. This is the request: {request}"},
             )
        try:
             user = User.objects.get(username=username)
