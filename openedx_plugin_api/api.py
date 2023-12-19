@@ -58,7 +58,7 @@ except ImportError:
     )
 
 # our stuff
-from .utils import get_course_info
+from .utils import get_course_info, get_name_validation_error
 from .models import CoursePoints
 from .__about__ import __version__
 
@@ -493,7 +493,7 @@ class UsersProfileUpdateView(APIView):
         print(request)
         return Response(
             status=status.HTTP_400_BAD_REQUEST,
-            data={"message": f"Username must be passed to update the profile. {request}"},
+            data={"message": f"Username must be passed to update the profile and use method as POST."},
         )
     def post(self, request):
        print(request)
@@ -502,7 +502,7 @@ class UsersProfileUpdateView(APIView):
        if not username:
            return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": f"Username must be passed to update the profile in POST method. This is the request: {request}"},
+                data={"message": f"Username must be passed to update the profile."},
             )
        try:
             user = User.objects.get(username=username)
@@ -514,7 +514,17 @@ class UsersProfileUpdateView(APIView):
                         data={"message": f"An account with the email ID: '{email}' already exists."},
                     )
             user.email = email
+            name_validation_error = get_name_validation_error(data.get("name", user.profile.name))
+            if len(name_validation_error) > 0:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data={"message": name_validation_error},
+                )
             user.profile.name = data.get("name", user.profile.name)
+            user.profile.gender = data.get("gender", user.profile.gender)
+            user.profile.year_of_birth = data.get("year_of_birth", user.profile.year_of_birth)
+            user.profile.level_of_education = data.get("level_of_education", user.profile.level_of_education)
+            user.profile.country = data.get("country", user.profile.country)
             user.save()
             user.profile.save()
             return ResponseSuccess(
