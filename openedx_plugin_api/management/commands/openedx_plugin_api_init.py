@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 PLUGIN_API_USER_NAME = os.environ.get("PLUGIN_API_USER_NAME")
 PLUGIN_API_USER_EMAIL = os.environ.get("PLUGIN_API_USER_EMAIL")
-PLUGIN_API_USER_PASSWORD = os.environ.get("PLUGIN_API_USER_PASSWORD")
 OPENEDX_CLIENT_ID = os.environ.get("OPENEDX_CLIENT_ID")
 OPENEDX_CLIENT_SECRET = os.environ.get("OPENEDX_CLIENT_SECRET")
 OPENEDX_COMPLETE_DOMAIN_NAME = os.environ.get("OPENEDX_COMPLETE_DOMAIN_NAME")
@@ -35,7 +34,6 @@ class Command(BaseCommand):
             [
                 PLUGIN_API_USER_EMAIL,
                 PLUGIN_API_USER_NAME,
-                PLUGIN_API_USER_PASSWORD,
                 OPENEDX_COMPLETE_DOMAIN_NAME,
             ]
         ):
@@ -44,7 +42,6 @@ class Command(BaseCommand):
         user, created = User.objects.get_or_create(
             username=PLUGIN_API_USER_NAME, defaults={"email": PLUGIN_API_USER_EMAIL}
         )
-        user.set_password(PLUGIN_API_USER_PASSWORD)
         user.save()
 
         logger.info("Assert API access")

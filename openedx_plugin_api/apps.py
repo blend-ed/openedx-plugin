@@ -61,7 +61,6 @@ class CustomPluginAPIConfig(AppConfig):
         if IS_READY:
             return
 
-        from . import signals  # pylint: disable=unused-import
         from .__about__ import __version__
         from .waffle import waffle_init
 
