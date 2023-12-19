@@ -114,12 +114,7 @@ setup(
         #            and also that you are not introducing any name collisions.
         # https://github.com/openedx/edx-platform/blob/master/setup.py#L88
         "lms.djangoapp": [
-            "openedx_plugin = openedx_plugin.apps:CustomPluginConfig",
             "openedx_plugin_api = openedx_plugin_api.apps:CustomPluginAPIConfig",
-            "openedx_plugin_mobile_api =" " openedx_plugin_mobile_api.apps:MobileApiConfig",
-        ],
-        "cms.djangoapp": [
-            "openedx_plugin_cms = openedx_plugin_cms.apps:CustomPluginCMSConfig",
         ],
     },
     extras_require={
