@@ -10,6 +10,8 @@ usage:          utility and convenience functions for
 """
 # python stuff
 import re
+import datetime
+from pytz import UTC
 
 def get_name_validation_error(name):
     """Get the built-in validation error message for when
@@ -39,3 +41,10 @@ def get_name_validation_error(name):
             return "Full name can't be longer than 255 symbols"
 
         return 'Enter a valid name' if (contains_html(name) or contains_url(name)) else ''
+
+def _make_upload_dt():
+    """
+    Generate a server-side timestamp for the upload. This is in a separate
+    function so its behavior can be overridden in tests.
+    """
+    return datetime.datetime.utcnow().replace(tzinfo=UTC)
