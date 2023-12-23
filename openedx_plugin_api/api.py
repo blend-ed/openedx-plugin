@@ -114,7 +114,7 @@ class UsersProfileUpdateView(APIView):
             user.profile.year_of_birth = data.get("year_of_birth", user.profile.year_of_birth)
             user.profile.level_of_education = data.get("level_of_education", user.profile.level_of_education)
             user.profile.country = data.get("country", user.profile.country)
-            user.profile.phone_number = data.get("phone_number", user.phone_number)
+            user.profile.phone_number = data.get("phone_number", user.profile.phone_number)
             user.save()
             user.profile.save()
             return ResponseSuccess(
