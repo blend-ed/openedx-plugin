@@ -25,6 +25,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 # open edx stuff
+from edx_ace import ace
 from edx_ace.recipient import Recipient
 from common.djangoapps.student.models import email_exists_or_retired
 from openedx.core.lib.api.view_utils import view_auth_classes
