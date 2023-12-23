@@ -9,27 +9,34 @@ usage:          Example custom REST API leveraging misc functionality from
                 Open edX repos.
 """
 # python stuff
-import itertools
 from contextlib import closing
 import logging
 
 
 # django stuff
 from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.contrib.sites.models import Site
+
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import FormParser, MultiPartParser
 
 # open edx stuff
+from edx_ace.recipient import Recipient
 from common.djangoapps.student.models import email_exists_or_retired
 from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.djangoapps.profile_images.images import IMAGE_TYPES, create_profile_images, remove_profile_images, validate_uploaded_image
 from openedx.core.djangoapps.profile_images.exceptions import ImageValidationError
-from openedx.core.lib.api.parsers import TypedFileUploadParser
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
 from openedx.core.djangoapps.user_api.errors import UserNotFound
+from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_request_and_deactivate_account, username_suffix_generator
+from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
+from openedx.core.djangoapps.user_api.accounts.notifications import DeletionNotificationMessage
+from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
+from django.contrib.auth import authenticate, get_user_model, logout
+
 
 # our stuff
 from .utils import get_name_validation_error, _make_upload_dt
@@ -121,9 +128,6 @@ class UsersProfileUpdateView(APIView):
 
 @view_auth_classes(is_authenticated=True)
 class UserProfileImageUpdateView(APIView):
-    
-    upload_media_types = set(itertools.chain(*(image_type.mimetypes for image_type in IMAGE_TYPES.values())))
-    parser_classes = (MultiPartParser, FormParser, TypedFileUploadParser)
 
     def get(self, request, username):
         print(request, username)
@@ -134,7 +138,7 @@ class UserProfileImageUpdateView(APIView):
 
     def post(self, request, username):
         """
-        POST /openedx_plugin/api/users/image/{username}
+        POST /openedx_plugin/api/users/image/{username}/
         """
 
         print('request', request)
@@ -206,6 +210,62 @@ class UserProfileImageUpdateView(APIView):
         # send client response.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class UserAccountDeleteView(APIView):
+    def get(self, request):
+        print('request', request)
+        log.info(f'request: {request}')
+        return ResponseSuccess({"message": "do POST req, pass username in url"})
+    
+
+    def post(self, request, username):
+        """
+        POST /openedx_plugin/api/users/account/delete/<username>/
+
+        Marks the user as having no password set for deactivation purposes,
+        and logs the user out.
+        """
+        user = User.objects.get(username=username)
+        try:
+            with transaction.atomic():
+                user_email = user.email
+                create_retirement_request_and_deactivate_account(user)
+
+                try:
+                    # Send notification email to user
+                    site = Site.objects.get_current()
+                    notification_context = get_base_template_context(site)
+                    notification_context.update({'full_name': user.profile.name})
+                    language_code = user.preferences.model.get_value(
+                        user,
+                        LANGUAGE_KEY,
+                        default=settings.LANGUAGE_CODE
+                    )
+                    notification = DeletionNotificationMessage().personalize(
+                        recipient=Recipient(lms_user_id=0, email_address=user_email),
+                        language=language_code,
+                        user_context=notification_context,
+                    )
+                    ace.send(notification)
+                except Exception as exc:
+                    log.exception('Error sending out deletion notification email')
+                    raise exc
+
+                # Log the user out.
+                logout(request)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except KeyError:
+            log.exception(f'Username not specified {request.user}')
+            return Response('Username not specified.', status=status.HTTP_404_NOT_FOUND)
+        except User.DoesNotExist:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={"message": f"No user '{username}' found with given username."},
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            log.exception(f'500 error deactivating account {exc}')
+            return Response(str(exc), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    
 class TestApiView(APIView):
     def get(self, request):
         print('request', request)
