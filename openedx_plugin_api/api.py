@@ -33,7 +33,7 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_
 from openedx.core.djangoapps.user_api.errors import UserNotFound
 from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_request_and_deactivate_account, username_suffix_generator
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
-from openedx.core.djangoapps.user_api.accounts.notifications import DeletionNotificationMessage
+from openedx.core.djangoapps.user_api.message_types import DeletionNotificationMessage
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from django.contrib.auth import authenticate, get_user_model, logout
 
