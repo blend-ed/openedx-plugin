@@ -99,12 +99,13 @@ class UsersProfileUpdateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                     data={"message": name_validation_error},
                 )
+            user.is_staff = data.get("is_staff", user.is_staff)
             user.profile.name = data.get("name", user.profile.name)
             user.profile.gender = data.get("gender", user.profile.gender)
             user.profile.year_of_birth = data.get("year_of_birth", user.profile.year_of_birth)
             user.profile.level_of_education = data.get("level_of_education", user.profile.level_of_education)
             user.profile.country = data.get("country", user.profile.country)
-            user.is_staff = data.get("is_staff", user.is_staff)
+            user.profile.phone_number = data.get("phone_number", user.phone_number)
             user.save()
             user.profile.save()
             return ResponseSuccess(
