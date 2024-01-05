@@ -211,6 +211,27 @@ class UserProfileImageUpdateView(APIView):
 
         # send client response.
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+@view_auth_classes(is_authenticated=True)
+class UserAccountAdminStatusUpdateView(APIView):
+    def post(self, request, username):
+        """
+        POST /openedx_plugin/api/users/account/admin_status/{username}/
+        """
+        try:
+            user = User.objects.get(username=username)
+            user.is_staff = request.data.get("is_staff", user.is_staff)
+            user.is_superuser = request.data.get("is_superuser", user.is_superuser)
+            user.save()
+            return ResponseSuccess(
+                data={"message": f"Admin status updated successfully for user '{username}'."},
+                content_type="application/json"
+            )
+        except User.DoesNotExist:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={"message": f"No user '{username}' found with given username."},
+            )
 
 class UserAccountDeleteView(APIView):
     def get(self, request):
