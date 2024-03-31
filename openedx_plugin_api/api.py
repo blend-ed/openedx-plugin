@@ -18,6 +18,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.utils import timezone
 
 
 from rest_framework import status
@@ -27,9 +28,10 @@ from rest_framework.views import APIView
 # open edx stuff
 from edx_ace import ace
 from edx_ace.recipient import Recipient
+from cms.djangoapps.course_creators.models import CourseCreator
 from common.djangoapps.student.models import email_exists_or_retired
 from openedx.core.lib.api.view_utils import view_auth_classes
-from openedx.core.djangoapps.profile_images.images import IMAGE_TYPES, create_profile_images, remove_profile_images, validate_uploaded_image
+from openedx.core.djangoapps.profile_images.images import create_profile_images, remove_profile_images, validate_uploaded_image
 from openedx.core.djangoapps.profile_images.exceptions import ImageValidationError
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names, set_has_profile_image
 from openedx.core.djangoapps.user_api.errors import UserNotFound
@@ -37,7 +39,7 @@ from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_re
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.user_api.message_types import DeletionNotificationMessage
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
-from django.contrib.auth import authenticate, get_user_model, logout
+from django.contrib.auth import get_user_model, logout
 
 
 # our stuff
@@ -288,7 +290,39 @@ class UserAccountDeleteView(APIView):
             log.exception(f'500 error deactivating account {exc}')
             return Response(str(exc), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    
+class UserAccountCourseCreatorStatusUpdateView(APIView):
+    """
+    Update the course creator status for a user.
+    """
+    def post(self, request, username):
+        """
+        POST /openedx_plugin/api/users/account/coursecreator/{username}/
+        """
+        data = request.data
+        organizations = data.get("organizations")
+        try:
+            user = User.objects.get(username=username)
+            course_creator = CourseCreator.objects.get(user=user)
+            # make default value as granted
+            course_creator.state = "GRANTED"
+            course_creator.organizations = [organizations]
+            course_creator.all_organizations = False
+            course_creator.save()
+            return ResponseSuccess(
+                data={"message": f"Course creator status updated successfully for user '{username}'."},
+                content_type="application/json"
+            )
+        except User.DoesNotExist:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={"message": f"No user '{username}' found with given username."},
+            )
+        except CourseCreator.DoesNotExist:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={"message": f"No course creator found for user '{username}'."},
+            )
+
 class TestApiView(APIView):
     def get(self, request):
         print('request', request)
