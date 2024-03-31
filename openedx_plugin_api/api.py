@@ -14,11 +14,10 @@ import logging
 
 
 # django stuff
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, logout
 from django.db import transaction
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.utils import timezone
 
 
 from rest_framework import status
@@ -39,8 +38,7 @@ from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_re
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.user_api.message_types import DeletionNotificationMessage
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
-from django.contrib.auth import get_user_model, logout
-
+from organizations.models import Organization
 
 # our stuff
 from .utils import get_name_validation_error, _make_upload_dt
@@ -299,13 +297,13 @@ class UserAccountCourseCreatorStatusUpdateView(APIView):
         POST /openedx_plugin/api/users/account/coursecreator/{username}/
         """
         data = request.data
-        organizations = data.get("organizations")
+        organization = Organization.objects.get(name=data.get("organization"))
         try:
             user = User.objects.get(username=username)
             course_creator = CourseCreator.objects.get(user=user)
             # make default value as granted
             course_creator.state = "GRANTED"
-            course_creator.organizations = [organizations]
+            course_creator.organizations.add(organization)
             course_creator.all_organizations = False
             course_creator.save()
             return ResponseSuccess(
