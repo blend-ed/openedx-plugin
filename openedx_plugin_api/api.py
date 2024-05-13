@@ -27,7 +27,6 @@ from rest_framework.views import APIView
 # open edx stuff
 from edx_ace import ace
 from edx_ace.recipient import Recipient
-from cms.djangoapps.course_creators.models import CourseCreator
 from common.djangoapps.student.models import email_exists_or_retired
 from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.djangoapps.profile_images.images import create_profile_images, remove_profile_images, validate_uploaded_image
@@ -287,42 +286,3 @@ class UserAccountDeleteView(APIView):
         except Exception as exc:  # pylint: disable=broad-except
             log.exception(f'500 error deactivating account {exc}')
             return Response(str(exc), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class UserAccountCourseCreatorStatusUpdateView(APIView):
-    """
-    Update the course creator status for a user.
-    """
-    def post(self, request, username):
-        """
-        POST /openedx_plugin/api/users/account/coursecreator/{username}/
-        """
-        data = request.data
-        organization = Organization.objects.get(name=data.get("organization"))
-        try:
-            user = User.objects.get(username=username)
-            course_creator = CourseCreator.objects.get(user=user)
-            # make default value as granted
-            course_creator.state = "GRANTED"
-            course_creator.organizations.add(organization)
-            course_creator.all_organizations = False
-            course_creator.save()
-            return ResponseSuccess(
-                data={"message": f"Course creator status updated successfully for user '{username}'."},
-                content_type="application/json"
-            )
-        except User.DoesNotExist:
-            return Response(
-                status=status.HTTP_400_BAD_REQUEST,
-                data={"message": f"No user '{username}' found with given username."},
-            )
-        except CourseCreator.DoesNotExist:
-            return Response(
-                status=status.HTTP_400_BAD_REQUEST,
-                data={"message": f"No course creator found for user '{username}'."},
-            )
-
-class TestApiView(APIView):
-    def get(self, request):
-        print('request', request)
-        log.info(f'request: {request}')
-        return ResponseSuccess({"message": "Hello asdfas World!"})
